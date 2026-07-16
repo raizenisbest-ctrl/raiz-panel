@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaizPro - Admin Kontrol Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #050505;
+            color: #c5c6c7;
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Arka Plan Kar Efekti İçin Canvas */
+        #snow-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Üst Header Alanı */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid rgba(102, 252, 241, 0.2);
+            padding-bottom: 20px;
+        }
+
+        .logo h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px #66fcf1, 0 0 30px #45a29e;
+        }
+
+        .logo p {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #45a29e;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
+        }
+
+        .logout-btn:hover {
+            background: #ff3333;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Ekleme/İstatistik Bölümü */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(10, 15, 20, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(102, 252, 241, 0.15);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(102, 252, 241, 0.02);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 40px rgba(102, 252, 241, 0.1), inset 0 0 20px rgba(102, 252, 241, 0.05);
+        }
+
+        .card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            border-left: 4px solid #66fcf1;
+            padding-left: 15px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+        }
+
+        .create-form {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .select-group {
+            flex-grow: 1;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(102, 252, 241, 0.3);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            border-color: #66fcf1;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
+        }
+
+        .btn-create {
+            background: linear-gradient(45deg, #1f2833, #45a29e, #66fcf1);
+            background-size: 200% 200%;
+            color: #050505;
+            border: none;
+            padding: 15px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .btn-create:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 30px rgba(102, 252, 241, 0.7);
+            color: #fff;
+        }
+
+        .stats-box {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #66fcf1;
+            text-shadow: 0 0 20px rgba(102, 252, 241, 0.6);
+        }
+
+        .stat-lbl {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #45a29e;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        /* Key Listesi Tablosu */
+        .keys-table-container {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(102, 252, 241, 0.1);
+            border-radius: 12px;
+            padding: 5px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 18px 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #45a29e;
+            letter-spacing: 1px;
+            border-bottom: 2px solid rgba(102, 252, 241, 0.2);
+            background: rgba(10, 15, 20, 0.8);
+        }
+
+        td {
+            padding: 18px 20px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e5e5e5;
+            transition: background 0.2s ease;
+        }
+
+        tr:hover td {
+            background: rgba(102, 252, 241, 0.05);
+        }
+
+        .key-code {
+            font-family: 'Orbitron', monospace;
+            background: rgba(102, 252, 241, 0.1);
+            color: #66fcf1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: 1px solid rgba(102, 252, 241, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .key-code:hover {
+            background: rgba(102, 252, 241, 0.2);
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .status-active { background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
+        .status-banned { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
+        .status-expired { background: rgba(241, 196, 15, 0.2); border: 1px solid #f1c40f; color: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.4); }
+
+        .hwid-val {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .hwid-empty {
+            color: #666;
+            font-style: italic;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-action {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-ban { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
+        .btn-ban:hover { background: #e74c3c; color: #fff; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+        
+        .btn-unban { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
+        .btn-unban:hover { background: #2ecc71; color: #fff; box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); }
+
+        .btn-reset { background: rgba(52, 152, 219, 0.1); border: 1px solid #3498db; color: #3498db; }
+        .btn-reset:hover { background: #3498db; color: #fff; box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); }
+
+        .btn-del { background: rgba(149, 165, 166, 0.1); border: 1px solid #95a5a6; color: #95a5a6; }
+        .btn-del:hover { background: #ff3333; border-color: #ff3333; color: #fff; box-shadow: 0 0 15px rgba(255, 51, 51, 0.5); }
+
+        /* Bildirim Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(10, 15, 20, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid #66fcf1;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(102, 252, 241, 0.3);
+            display: none;
+            z-index: 1000;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            letter-spacing: 1px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Atmosfer ve Arayüz Sesleri -->
+    <audio id="bg-music" loop autoplay>
+        <source src="https://cdn.pixabay.com/download/audio/2022/11/08/audio_65cb33a697.mp3?filename=dark-ambient-atmosphere-124115.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="snd-hover"><source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_51a0dc0bd5.mp3" type="audio/mpeg"></audio>
+    <audio id="snd-click"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>
+    <audio id="snd-success"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb630cc098.mp3" type="audio/mpeg"></audio>
+    <audio id="snd-delete"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3" type="audio/mpeg"></audio>
+
+    <canvas id="snow-canvas"></canvas>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>RAIZPRO</h1>
+                <p>SYSTEM ADMINISTRATION CORE</p>
+            </div>
+            <button class="logout-btn" onclick="logout()">LOGOUT</button>
+        </header>
+
+        <div class="controls-grid">
+            <div class="card">
+                <h2>Generate New License Key</h2>
+                <form id="createForm" class="create-form">
+                    <div class="select-group">
+                        <select id="durationSelect">
+                            <option value="1">1 Day Access</option>
+                            <option value="7">7 Days Access</option>
+                            <option value="30" selected>30 Days Access</option>
+                            <option value="90">90 Days Access</option>
+                            <option value="-1">Lifetime Access</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-create">GENERATE KEY</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="stats-box">
+                    <div class="stat-item">
+                        <div class="stat-val" id="totalKeys">0</div>
+                        <div class="stat-lbl">TOTAL KEYS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val" id="activeKeys" style="color: #2ecc71; text-shadow: 0 0 20px rgba(46, 204, 113, 0.6);">0</div>
+                        <div class="stat-lbl">ACTIVE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Active Licenses Database</h2>
+            <div class="keys-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>LICENSE KEY</th>
+                            <th>CREATED</th>
+                            <th>EXPIRES</th>
+                            <th>HWID LOCK</th>
+                            <th>STATUS</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="keysTableBody">
+                        <!-- Burası JS ile doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // Eski preview token varsa temizle ve tekrar giriş yaptır
+        const storedToken = localStorage.getItem('raiz_token');
+        if (!storedToken || storedToken === 'preview_token_123') {
+            localStorage.removeItem('raiz_token');
+            window.location.href = '/index.html';
+        }
+
+        // Ses Fonksiyonları
+        const bgMusic = document.getElementById('bg-music');
+        const sndHover = document.getElementById('snd-hover');
+        const sndClick = document.getElementById('snd-click');
+        const sndSuccess = document.getElementById('snd-success');
+        const sndDelete = document.getElementById('snd-delete');
+
+        bgMusic.volume = 0.25;
+
+        function playHover() { sndHover.currentTime = 0; sndHover.volume = 0.5; sndHover.play().catch(()=>{}); }
+        function playClick() { sndClick.currentTime = 0; sndClick.volume = 0.7; sndClick.play().catch(()=>{}); }
+        function playSuccess() { sndSuccess.currentTime = 0; sndSuccess.volume = 0.6; sndSuccess.play().catch(()=>{}); }
+        function playDelete() { sndDelete.currentTime = 0; sndDelete.volume = 0.6; sndDelete.play().catch(()=>{}); }
+
+        // Statik butonlara hover sesi ekle
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', playHover);
+            btn.addEventListener('click', () => {
+                if(!btn.classList.contains('btn-del') && !btn.classList.contains('btn-create')) playClick();
+            });
+        });
+
+        // Kar Efekti (Canvas)
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        for (let i = 0; i < 150; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2 + 1,
+                d: Math.random() * 100,
+                vx: Math.random() * 1 - 0.5,
+                vy: Math.random() * 1 + 0.5
+            });
+        }
+
+        function drawSnow() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "rgba(102, 252, 241, 0.6)"; 
+            ctx.beginPath();
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                ctx.moveTo(p.x, p.y);
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+            }
+            ctx.fill();
+            updateSnow();
+            requestAnimationFrame(drawSnow);
+        }
+
+        function updateSnow() {
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.y += p.vy;
+                p.x += p.vx;
+                if (p.y > height) {
+                    particles[i] = { x: Math.random() * width, y: 0, r: p.r, d: p.d, vx: p.vx, vy: p.vy };
+                }
+            }
+        }
+        drawSnow();
+
+        // Real API Integration
+        let token = localStorage.getItem('raiz_token') || 'session_raiz_pro_auth_token_9988';
+        if (token === 'preview_token_123') {
+            token = 'session_raiz_pro_auth_token_9988';
+            localStorage.setItem('raiz_token', token);
+        }
+
+        // Key'leri Yükle (Gerçek Veri)
+        async function loadKeys() {
+            try {
+                const res = await fetch('/api/keys', {
+                    headers: { 'Authorization': token }
+                });
+                if (res.status === 403 || res.status === 401) {
+                    logout();
+                    return;
+                }
+                const keys = await res.json();
+                renderTable(keys);
+                updateStats(keys);
+            } catch (err) {
+                console.error("Keyler yuklenirken hata:", err);
+            }
+        }
+
+        function renderTable(keys) {
+            const tbody = document.getElementById('keysTableBody');
+            tbody.innerHTML = '';
+
+            keys.forEach(k => {
+                const tr = document.createElement('tr');
+                
+                // Tarih formatı
+                const createdDate = new Date(k.created_at).toLocaleDateString('tr-TR');
+                const expiresDate = k.expires_at === 'Sınırsız' 
+                    ? 'Sınırsız' 
+                    : new Date(k.expires_at).toLocaleDateString('tr-TR');
+
+                const hwidText = k.hwid 
+                    ? `<span class="hwid-val" title="${k.hwid}">${k.hwid.substring(0, 15)}...</span>` 
+                    : '<span class="hwid-empty">Unbound</span>';
+
+                let statusClass = 'status-active';
+                if (k.status === 'Banned') statusClass = 'status-banned';
+                if (k.status === 'Expired') statusClass = 'status-expired';
+
+                // Ban butonu durumu
+                const banBtn = k.status === 'Banned'
+                    ? `<button class="btn-action btn-unban" onclick="toggleStatus('${k.key}', 'Active')">UNBAN</button>`
+                    : `<button class="btn-action btn-ban" onclick="toggleStatus('${k.key}', 'Banned')">BAN</button>`;
+
+                tr.innerHTML = `
+                    <td><span class="key-code" onclick="copyText('${k.key}')">${k.key}</span></td>
+                    <td>${createdDate}</td>
+                    <td>${expiresDate}</td>
+                    <td>${hwidText}</td>
+                    <td><span class="status-badge ${statusClass}">${k.status}</span></td>
+                    <td class="actions-cell">
+                        ${banBtn}
+                        <button class="btn-action btn-reset" onmouseenter="playHover()" onclick="playClick(); resetHWID('${k.key}')">RESET HWID</button>
+                        <button class="btn-action btn-del" onmouseenter="playHover()" onclick="deleteKey('${k.key}')">DEL</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Dinamik ban butonlarına ses ekle
+            document.querySelectorAll('.btn-ban, .btn-unban').forEach(btn => {
+                btn.addEventListener('mouseenter', playHover);
+                btn.addEventListener('click', playClick);
+            });
+            // Dinamik key kodlarına ses ekle
+            document.querySelectorAll('.key-code').forEach(btn => {
+                btn.addEventListener('mouseenter', playHover);
+                btn.addEventListener('click', playSuccess);
+            });
+        }
+
+        function updateStats(keys) {
+            document.getElementById('totalKeys').innerText = keys.length;
+            document.getElementById('activeKeys').innerText = keys.filter(k => k.status === 'Active').length;
+        }
+
+        // Key Ekleme (Gerçek)
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const durationDays = parseInt(document.getElementById('durationSelect').value);
+            
+            try {
+                const res = await fetch('/api/keys/create', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token 
+                    },
+                    body: JSON.stringify({ durationDays })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    playSuccess();
+                    showToast("Key Generated & Copied!");
+                    copyTextSilently(result.key.key);
+                    loadKeys();
+                }
+            } catch (err) {
+                console.error("Key olusturma hatasi:", err);
+            }
+        });
+
+        // Durum Değiştirme (Ban) (Gerçek)
+        async function toggleStatus(key, status) {
+            try {
+                const res = await fetch('/api/keys/toggle-status', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token 
+                    },
+                    body: JSON.stringify({ key, status })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    loadKeys();
+                }
+            } catch (err) {
+                console.error("Durum degistirme hatasi:", err);
+            }
+        }
+
+        // HWID Sıfırlama (Gerçek)
+        async function resetHWID(key) {
+            try {
+                const res = await fetch('/api/keys/reset-hwid', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token 
+                    },
+                    body: JSON.stringify({ key })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("HWID Reset Successful!");
+                    loadKeys();
+                }
+            } catch (err) {
+                console.error("HWID sifirlama hatasi:", err);
+            }
+        }
+
+        // Key Silme (Gerçek)
+        async function deleteKey(key) {
+            playDelete();
+            if (!confirm('Are you sure you want to permanently delete this key?')) return;
+            try {
+                const res = await fetch(`/api/keys/${key}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': token }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("Key Deleted!");
+                    loadKeys();
+                }
+            } catch (err) {
+                console.error("Key silme hatasi:", err);
+            }
+        }
+
+        // Kopyalama Toast'ı
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            showToast("Copied: " + text);
+        }
+
+        // Sessiz Kopyalama
+        function copyTextSilently(text) {
+            navigator.clipboard.writeText(text);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        function logout() {
+            localStorage.removeItem('raiz_token');
+            window.location.href = '/index.html';
+        }
+
+        // İlk Yükleme
+        loadKeys();
+    </script>
+</body>
+</html>

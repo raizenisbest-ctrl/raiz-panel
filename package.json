@@ -1,0 +1,14 @@
+{
+  "name": "raizpro-key-system",
+  "version": "1.0.0",
+  "description": "RaizPro Key System Web Panel & API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "body-parser": "^1.20.2",
+    "uuid": "^9.0.1"
+  }
+}

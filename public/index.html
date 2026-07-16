@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaizPro - Admin Girişi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #050505;
+            color: #c5c6c7;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+        }
+
+        /* Arka Plan Kar Efekti İçin Canvas */
+        #snow-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Overlay (Tıklayıp Müziği Başlatmak İçin) */
+        #click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #66fcf1;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: opacity 1s ease;
+            text-shadow: 0 0 20px #66fcf1;
+            animation: pulseText 2s infinite;
+        }
+
+        @keyframes pulseText {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+
+        /* Glassmorphism Giriş Kartı */
+        .login-card {
+            background: rgba(10, 15, 20, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(102, 252, 241, 0.2);
+            border-radius: 20px;
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 0 40px rgba(102, 252, 241, 0.1), inset 0 0 20px rgba(102, 252, 241, 0.05);
+            text-align: center;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .login-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #ffffff;
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px #66fcf1, 0 0 30px #45a29e;
+        }
+
+        p {
+            font-size: 0.95rem;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+            position: relative;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.4s ease;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        input[type="password"]:focus {
+            border-color: #66fcf1;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(45deg, #1f2833, #45a29e, #66fcf1);
+            background-size: 200% 200%;
+            color: #050505;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 30px rgba(102, 252, 241, 0.7);
+            color: #fff;
+        }
+
+        .error-msg {
+            color: #ff3333;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            display: none;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Atmosfer ve Arayüz Sesleri -->
+    <audio id="bg-music" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/11/08/audio_65cb33a697.mp3?filename=dark-ambient-atmosphere-124115.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="snd-hover"><source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_51a0dc0bd5.mp3" type="audio/mpeg"></audio>
+    <audio id="snd-click"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>
+    <audio id="snd-error"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3" type="audio/mpeg"></audio>
+
+    <audio id="snd-type" loop><source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_3d1dfbf3ed.mp3" type="audio/mpeg"></audio>
+
+    <canvas id="snow-canvas"></canvas>
+
+    <div id="click-overlay">
+        [ SİTEYE GİRİŞ İÇİN TIKLA ]
+    </div>
+
+    <div class="login-card" id="loginCard">
+        <h1>RAIZPRO</h1>
+        <p id="typewriter-text"></p>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="password" id="password" placeholder="ŞİFRE" required>
+            </div>
+            <button type="submit">AUTHORIZE</button>
+            <div class="error-msg" id="errorMsg">ACCESS DENIED</div>
+        </form>
+    </div>
+
+    <script>
+        // Müzik ve Ses Kontrolü
+        const overlay = document.getElementById('click-overlay');
+        const loginCard = document.getElementById('loginCard');
+        const bgMusic = document.getElementById('bg-music');
+        const sndHover = document.getElementById('snd-hover');
+        const sndClick = document.getElementById('snd-click');
+        const sndError = document.getElementById('snd-error');
+        const sndType = document.getElementById('snd-type');
+        const passwordInput = document.getElementById('password');
+
+        // Ses Fonksiyonları
+        function playHover() { sndHover.currentTime = 0; sndHover.volume = 0.5; sndHover.play().catch(()=>{}); }
+        function playClick() { sndClick.currentTime = 0; sndClick.volume = 0.7; sndClick.play().catch(()=>{}); }
+        function playError() { sndError.currentTime = 0; sndError.volume = 0.6; sndError.play().catch(()=>{}); }
+
+        // Hover efektlerini butonlara ekle
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', playHover);
+            btn.addEventListener('click', playClick);
+        });
+
+        // Typewriter Efekti (Yazı Yazma Animasyonu)
+        const textToType = "A D M I N   C O N T R O L";
+        const typeTarget = document.getElementById('typewriter-text');
+        let typeIndex = 0;
+
+        function typeWriter() {
+            if (typeIndex < textToType.length) {
+                typeTarget.innerHTML += textToType.charAt(typeIndex);
+                typeIndex++;
+                setTimeout(typeWriter, 80); // Yazma hızı
+            } else {
+                sndType.pause(); // Yazı bitince sesi durdur
+            }
+        }
+
+        overlay.addEventListener('click', () => {
+            playClick();
+            overlay.style.opacity = '0';
+            bgMusic.volume = 0.3;
+            bgMusic.play().catch(e => console.log("Müzik çalınamadı:", e));
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                loginCard.classList.add('visible');
+                
+                // Yazı yazma animasyonunu ve sesini başlat
+                sndType.volume = 0.3;
+                sndType.play().catch(()=>{});
+                typeWriter();
+
+                setTimeout(() => { passwordInput.focus(); }, 1000);
+            }, 1000);
+        });
+
+        // Kar Efekti (Canvas)
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        for (let i = 0; i < 100; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2 + 1,
+                d: Math.random() * 100,
+                vx: Math.random() * 1 - 0.5,
+                vy: Math.random() * 1 + 0.5
+            });
+        }
+
+        function drawSnow() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "rgba(102, 252, 241, 0.8)"; // Turkuaz/Mavi Kar
+            ctx.beginPath();
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                ctx.moveTo(p.x, p.y);
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+            }
+            ctx.fill();
+            updateSnow();
+            requestAnimationFrame(drawSnow);
+        }
+
+        function updateSnow() {
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.y += p.vy;
+                p.x += p.vx;
+                if (p.y > height) {
+                    particles[i] = { x: Math.random() * width, y: 0, r: p.r, d: p.d, vx: p.vx, vy: p.vy };
+                }
+            }
+        }
+        drawSnow();
+
+        // Giriş İşlemi (Gerçek API)
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    localStorage.setItem('raiz_token', result.token);
+                    document.body.style.opacity = '0';
+                    setTimeout(() => {
+                        window.location.href = 'panel.html';
+                    }, 500);
+                } else {
+                    playError();
+                    errorMsg.style.display = 'block';
+                    document.getElementById('password').value = '';
+                }
+            } catch (err) {
+                console.error("Giris yapilirken hata olustu:", err);
+                playError();
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

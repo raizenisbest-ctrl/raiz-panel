@@ -1,39 +1,31 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'keys.json');
+
+// MongoDB Connection
+const MONGO_URI = 'mongodb+srv://raiz:0909raizen09@cluster0.s0zajji.mongodb.net/raizpro?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB Veritabanina Basariyla Baglandi!'))
+  .catch(err => console.error('❌ MongoDB Baglanti Hatasi:', err));
+
+// MongoDB Schema
+const keySchema = new mongoose.Schema({
+    key: { type: String, required: true, unique: true },
+    created_at: { type: String, required: true },
+    duration_days: { type: Number, required: true },
+    expires_at: { type: String, required: true },
+    hwid: { type: String, default: null },
+    status: { type: String, default: 'Active' }
+});
+const KeyModel = mongoose.model('Key', keySchema);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Yardımcı Fonksiyon: Keyleri Oku
-function readKeys() {
-    try {
-        if (!fs.existsSync(DB_FILE)) {
-            fs.writeFileSync(DB_FILE, JSON.stringify([]));
-        }
-        const data = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Veritabanı okuma hatası:", err);
-        return [];
-    }
-}
-
-// Yardımcı Fonksiyon: Keyleri Yaz
-function writeKeys(keys) {
-    try {
-        fs.writeFileSync(DB_FILE, JSON.stringify(keys, null, 2));
-    } catch (err) {
-        console.error("Veritabanı yazma hatası:", err);
-    }
-}
 
 // ── ADMIN PANELİ API'LERİ ──────────────────────────────────────────────────
 
@@ -48,156 +40,157 @@ app.post('/api/login', (req, res) => {
 });
 
 // Key listeleme
-app.get('/api/keys', (req, res) => {
+app.get('/api/keys', async (req, res) => {
     const token = req.headers['authorization'];
     if (token !== 'session_raiz_pro_auth_token_9988') {
         return res.status(403).json({ error: 'Yetkisiz erişim!' });
     }
-    res.json(readKeys());
+    try {
+        const keys = await KeyModel.find();
+        res.json(keys);
+    } catch(err) {
+        res.status(500).json({ error: 'DB Hatasi' });
+    }
 });
 
 // Yeni key oluşturma
-app.post('/api/keys/create', (req, res) => {
+app.post('/api/keys/create', async (req, res) => {
     const token = req.headers['authorization'];
     if (token !== 'session_raiz_pro_auth_token_9988') {
         return res.status(403).json({ error: 'Yetkisiz erişim!' });
     }
 
     const { durationDays } = req.body;
-    const keys = readKeys();
     
-    // Rastgele formatta key üret: RAIZ-XXXX-XXXX
     const randomPart1 = Math.random().toString(36).substring(2, 6).toUpperCase();
     const randomPart2 = Math.random().toString(36).substring(2, 6).toUpperCase();
     const keyString = `RAIZ-${randomPart1}-${randomPart2}`;
 
-    const newKey = {
+    const newKey = new KeyModel({
         key: keyString,
         created_at: new Date().toISOString(),
         duration_days: parseInt(durationDays) || 30,
         expires_at: durationDays === -1 ? 'Sınırsız' : new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString(),
-        hwid: null, // İlk girişte eşleşecek
-        status: 'Active' // Active, Banned, Expired
-    };
+        hwid: null,
+        status: 'Active'
+    });
 
-    keys.push(newKey);
-    writeKeys(keys);
-
-    res.json({ success: true, key: newKey });
+    try {
+        await newKey.save();
+        res.json({ success: true, key: newKey });
+    } catch(err) {
+        res.status(500).json({ error: 'Key olusturulamadi.' });
+    }
 });
 
 // Key silme
-app.delete('/api/keys/:key', (req, res) => {
+app.delete('/api/keys/:key', async (req, res) => {
     const token = req.headers['authorization'];
     if (token !== 'session_raiz_pro_auth_token_9988') {
         return res.status(403).json({ error: 'Yetkisiz erişim!' });
     }
 
-    const keyToDelete = req.params.key;
-    let keys = readKeys();
-    const initialLength = keys.length;
-    keys = keys.filter(k => k.key !== keyToDelete);
-
-    if (keys.length < initialLength) {
-        writeKeys(keys);
-        res.json({ success: true, message: 'Key silindi.' });
-    } else {
-        res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+    try {
+        const result = await KeyModel.deleteOne({ key: req.params.key });
+        if (result.deletedCount > 0) {
+            res.json({ success: true, message: 'Key silindi.' });
+        } else {
+            res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+        }
+    } catch(err) {
+        res.status(500).json({ error: 'DB Hatasi' });
     }
 });
 
 // HWID Sıfırlama
-app.post('/api/keys/reset-hwid', (req, res) => {
+app.post('/api/keys/reset-hwid', async (req, res) => {
     const token = req.headers['authorization'];
     if (token !== 'session_raiz_pro_auth_token_9988') {
         return res.status(403).json({ error: 'Yetkisiz erişim!' });
     }
 
-    const { key } = req.body;
-    const keys = readKeys();
-    const target = keys.find(k => k.key === key);
-
-    if (target) {
-        target.hwid = null;
-        writeKeys(keys);
-        res.json({ success: true, message: 'HWID başarıyla sıfırlandı.' });
-    } else {
-        res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+    try {
+        const target = await KeyModel.findOne({ key: req.body.key });
+        if (target) {
+            target.hwid = null;
+            await target.save();
+            res.json({ success: true, message: 'HWID başarıyla sıfırlandı.' });
+        } else {
+            res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+        }
+    } catch(err) {
+        res.status(500).json({ error: 'DB Hatasi' });
     }
 });
 
 // Key Durumu Değiştirme (Banlama / Açma)
-app.post('/api/keys/toggle-status', (req, res) => {
+app.post('/api/keys/toggle-status', async (req, res) => {
     const token = req.headers['authorization'];
     if (token !== 'session_raiz_pro_auth_token_9988') {
         return res.status(403).json({ error: 'Yetkisiz erişim!' });
     }
 
-    const { key, status } = req.body;
-    const keys = readKeys();
-    const target = keys.find(k => k.key === key);
-
-    if (target) {
-        target.status = status; // Active, Banned
-        writeKeys(keys);
-        res.json({ success: true, key: target });
-    } else {
-        res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+    try {
+        const target = await KeyModel.findOne({ key: req.body.key });
+        if (target) {
+            target.status = req.body.status;
+            await target.save();
+            res.json({ success: true, key: target });
+        } else {
+            res.status(404).json({ success: false, message: 'Key bulunamadı!' });
+        }
+    } catch(err) {
+        res.status(500).json({ error: 'DB Hatasi' });
     }
 });
-
 
 // ── CLIENT (MINECRAFT HİLE) API'Sİ ─────────────────────────────────────────
 
 // Client Key Doğrulama & HWID Kilitleme
-app.post('/api/client/verify', (req, res) => {
+app.post('/api/client/verify', async (req, res) => {
     const { key, hwid } = req.body;
     console.log(`[Verify Request] Key: "${key}", HWID: "${hwid}"`);
 
     if (!key || !hwid) {
-        console.log(`[Verify Failed] Missing parameter: key="${key}", hwid="${hwid}"`);
         return res.json({ success: false, message: 'Eksik parametre!' });
     }
 
-    const keys = readKeys();
-    const target = keys.find(k => k.key.toLowerCase() === key.toLowerCase());
-
-    if (!target) {
-        console.log(`[Verify Failed] Key "${key}" not found in DB! Existing keys:`, keys.map(k => k.key));
-        return res.json({ success: false, message: 'Gecersiz anahtar!' });
-    }
-
-    if (target.status === 'Banned') {
-        return res.json({ success: false, message: 'Bu anahtar yasaklanmistir!' });
-    }
-
-    // Süre kontrolü
-    if (target.expires_at !== 'Sınırsız') {
-        const expiresDate = new Date(target.expires_at);
-        if (new Date() > expiresDate) {
-            target.status = 'Expired';
-            writeKeys(keys);
-            return res.json({ success: false, message: 'Anahtarinizin suresi dolmustur!' });
+    try {
+        const target = await KeyModel.findOne({ key: new RegExp(`^${key}$`, 'i') });
+        if (!target) {
+            return res.json({ success: false, message: 'Gecersiz anahtar!' });
         }
-    }
 
-    // HWID Kontrolü ve Kilitleme
-    if (!target.hwid) {
-        // İlk kez giriyor, HWID kilitle
-        target.hwid = hwid;
-        writeKeys(keys);
-        return res.json({ success: true, message: 'Giris basarili, HWID kilitlendi.', expires_at: target.expires_at });
-    } else {
-        // HWID eşleşiyor mu?
-        if (target.hwid === hwid) {
-            return res.json({ success: true, message: 'Giris basarili.', expires_at: target.expires_at });
+        if (target.status === 'Banned') {
+            return res.json({ success: false, message: 'Bu anahtar yasaklanmistir!' });
+        }
+
+        if (target.expires_at !== 'Sınırsız') {
+            const expiresDate = new Date(target.expires_at);
+            if (new Date() > expiresDate) {
+                target.status = 'Expired';
+                await target.save();
+                return res.json({ success: false, message: 'Anahtarinizin suresi dolmustur!' });
+            }
+        }
+
+        if (!target.hwid) {
+            target.hwid = hwid;
+            await target.save();
+            return res.json({ success: true, message: 'Giris basarili, HWID kilitlendi.', expires_at: target.expires_at });
         } else {
-            return res.json({ success: false, message: 'HWID uyusmuyor! Baska PCden giris engellendi.' });
+            if (target.hwid === hwid) {
+                return res.json({ success: true, message: 'Giris basarili.', expires_at: target.expires_at });
+            } else {
+                return res.json({ success: false, message: 'HWID uyusmuyor! Baska PCden giris engellendi.' });
+            }
         }
+    } catch(err) {
+        return res.json({ success: false, message: 'Sunucu hatasi!' });
     }
 });
 
 // Sunucuyu Başlat
 app.listen(PORT, () => {
-    console.log(`RaizPro Key API sunucusu çalışıyor: http://localhost:${PORT}`);
+    console.log(`RaizPro Key API sunucusu calisiyor: http://localhost:${PORT}`);
 });

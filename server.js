@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const MONGO_URI = 'mongodb+srv://raiz:0909raizen09@cluster0.s0zajji.mongodb.net/raizpro?retryWrites=true&w=majority&appName=Cluster0';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Veritabanına Başarıyla Bağlandı!'))
-  .catch(err => console.error('❌ MongoDB Bağlantı Hatasi:', err));
+  .catch(err => console.error('❌ MongoDB Bağlantı Hatası:', err));
 
 // Key Schema (HWID Destekli ve HWID'siz Genel Key Alanı)
 const keySchema = new mongoose.Schema({
@@ -55,7 +55,7 @@ app.post('/api/create-key', async (req, res) => {
         const { duration_days, is_genel, note } = req.body;
         const days = parseInt(duration_days) || 30;
         
-        // Random Key Formattır: RAIZ-GENEL-XXXX-YYYY
+        // Key Kodu
         const part1 = Math.random().toString(36).substring(2, 6).toUpperCase();
         const part2 = Math.random().toString(36).substring(2, 6).toUpperCase();
         const prefix = is_genel ? 'RAIZ-GENEL' : 'RAIZ-HWID';
@@ -83,13 +83,17 @@ app.post('/api/create-key', async (req, res) => {
     }
 });
 
-// ── KEY KONTROL VE DOĞRULAMA (HWID VE HWID'SİZ SORGULAMA) ────────────────────
-app.post('/api/check-key', async (req, res) => {
+// ── ORTAK KEY DOĞRULAMA FONKSİYONU (RAIZLOADER EXE VE WEB TAM UYUMLU) ────────
+const checkKeyHandler = async (req, res) => {
     try {
-        const { key, hwid } = req.body;
-        if (!key) return res.status(400).json({ success: false, message: 'Key gereklidir.' });
+        const inputKey = req.body.key || req.query.key || req.body.activation_key || req.query.activation_key || req.body.license || req.query.license;
+        const hwid = req.body.hwid || req.query.hwid || req.body.hwid_code || req.query.hwid_code;
 
-        const foundKey = await KeyModel.findOne({ key: key.trim().toUpperCase() });
+        if (!inputKey) {
+            return res.json({ success: false, message: 'Key gereklidir.' });
+        }
+
+        const foundKey = await KeyModel.findOne({ key: inputKey.trim().toUpperCase() });
         if (!foundKey) {
             return res.json({ success: false, message: 'Geçersiz Key!' });
         }
@@ -119,17 +123,35 @@ app.post('/api/check-key', async (req, res) => {
         const diffTime = Math.abs(expires - now);
         const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+        // RaizLoader.exe C# Parsing ile tam uyumlu JSON yanıtı
         res.json({
             success: true,
             message: foundKey.is_genel ? 'Genel Key Doğrulandı! (HWID Kilidi Yok)' : 'HWID Key Doğrulandı!',
-            is_genel: foundKey.is_genel,
+            expires_at: foundKey.duration_days >= 999 ? 'Sınırsız' : foundKey.expires_at,
             remainingDays: foundKey.duration_days >= 999 ? 'Sınırsız' : `${remainingDays} Gün`,
-            expires_at: foundKey.expires_at
+            is_genel: foundKey.is_genel
         });
     } catch (err) {
+        console.error('Doğrulama hatası:', err);
         res.status(500).json({ success: false, message: 'Sunucu hatası.' });
     }
-});
+};
+
+// RaizLoader.exe'nin Tam Olarak İstediği Endpoint: /api/client/verify
+const checkRoutes = [
+    '/api/client/verify',
+    '/api/check-key',
+    '/api/check_key',
+    '/api/check',
+    '/api/verify',
+    '/check_key.php',
+    '/check.php',
+    '/check_key',
+    '/check',
+    '/verify'
+];
+
+app.all(checkRoutes, checkKeyHandler);
 
 // ── KEY SİLME ───────────────────────────────────────────────────────────────
 app.delete('/api/keys/:id', async (req, res) => {

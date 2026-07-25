@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genel Key Kontrolü & Yönetimi | Raiz.pro</title>
+    <meta name="description" content="Raiz.pro HWID'siz Genel Key sorgulama, lisans kontrolü ve key üretme paneli.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Header / Navbar -->
+    <header class="header">
+        <a href="index.html" class="logo" style="text-decoration: none;">
+            <span class="logo-accent">Raiz</span>.pro
+        </a>
+        <nav class="nav">
+            <a href="index.html#features" class="nav-link">Özellikler</a>
+            <a href="index.html#pricing" class="nav-link">Fiyatlar</a>
+            <a href="configs.html" class="nav-link">Configler</a>
+            <a href="key-kontrol.html" class="nav-link active">Key Kontrol</a>
+            <button class="btn btn-secondary btn-sm" id="nav-dc-btn">
+                <i class="fab fa-discord"></i> Discord
+            </button>
+        </nav>
+    </header>
+
+    <!-- Key Check Hero Section -->
+    <section class="hero" style="padding-top: 140px; padding-bottom: 40px;">
+        <div class="hero-badge">
+            <span class="badge-dot"></span> Donanım Bağımsız (HWID'siz) Sistem
+        </div>
+        <h1 class="hero-title">
+            Genel Key <span class="text-gradient">Sorgulama & Yönetim</span>
+        </h1>
+        <p class="hero-subtitle">
+            Lisans anahtarınızı donanım kısıtlaması (HWID) olmadan anında sorgulayın veya yeni genel key'ler oluşturun.
+        </p>
+    </section>
+
+    <!-- Key Kontrol Form Card -->
+    <div class="container" style="max-width: 800px; margin: 0 auto 60px auto; padding: 0 20px;">
+        <div class="card key-check-card" style="background: rgba(20, 20, 32, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 35px;">
+            <h2 style="font-size: 1.6rem; margin-bottom: 10px; font-family: 'Outfit', sans-serif;"><i class="fas fa-key text-gradient"></i> HWID'siz Key Sorgula</h2>
+            <p style="color: var(--text-muted, #a0a0b8); margin-bottom: 25px; font-size: 0.95rem;">Key kodunuzu aşağıdaki kutuya yazıp kontrol edin. Cihaz/HWID eşleşmesi gerekmez.</p>
+
+            <form id="key-check-form" style="display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap;">
+                <input type="text" id="key-input" placeholder="Örn: RAIZ-GENEL-98A2-31BF" required style="flex: 1; min-width: 260px; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 1rem; font-family: monospace; text-transform: uppercase;">
+                <button type="submit" class="btn btn-primary" style="padding: 14px 28px; white-space: nowrap;">
+                    <i class="fas fa-search"></i> Key Kontrol Et
+                </button>
+            </form>
+
+            <!-- Result Display Box -->
+            <div id="key-result" style="display: none; padding: 20px; border-radius: 14px; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span id="result-status-badge" class="badge-type" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px;"></span>
+                    <span style="font-size: 0.85rem; color: #4cd137; background: rgba(76, 209, 55, 0.15); padding: 4px 10px; border-radius: 6px;"><i class="fas fa-unlock-alt"></i> HWID Kilitsiz</span>
+                </div>
+                <h4 id="result-message" style="margin-bottom: 15px; font-size: 1.1rem;"></h4>
+                
+                <div id="result-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: rgba(0,0,0,0.25); padding: 15px; border-radius: 10px; font-size: 0.9rem;">
+                    <div><strong style="color: #a0a0b8;">Key Kodu:</strong> <span id="res-key" style="font-family: monospace; color: #fff;">-</span></div>
+                    <div><strong style="color: #a0a0b8;">Lisans Türü:</strong> <span id="res-type" style="color: #fff;">-</span></div>
+                    <div><strong style="color: #a0a0b8;">Kalan Süre:</strong> <span id="res-remaining" style="color: #00d2d3; font-weight: bold;">-</span></div>
+                    <div><strong style="color: #a0a0b8;">Son Kullanma:</strong> <span id="res-expires" style="color: #fff;">-</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin General Key Panel Section -->
+    <div class="container" style="max-width: 1000px; margin: 0 auto 80px auto; padding: 0 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 1.5rem; font-family: 'Outfit', sans-serif;"><i class="fas fa-user-shield text-gradient"></i> Genel Key Yönetim Paneli</h2>
+            <button id="btn-toggle-admin" class="btn btn-secondary btn-sm"><i class="fas fa-plus-circle"></i> Yeni Genel Key Ekle</button>
+        </div>
+
+        <!-- Add New Key Form Card -->
+        <div id="admin-add-card" class="card" style="background: rgba(20, 20, 32, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; margin-bottom: 30px; display: block;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 15px;">Yeni HWID'siz Genel Key Oluştur</h3>
+            <form id="create-key-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: #a0a0b8;">Lisans Süresi:</label>
+                    <select id="key-duration" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                        <option value="1">1 Günlük Deneme Key</option>
+                        <option value="7">7 Günlük Genel Key</option>
+                        <option value="30" selected>30 Günlük Genel Key</option>
+                        <option value="90">90 Günlük Genel Key</option>
+                        <option value="9999">Sınırsız (Lifetime) Genel Key</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: #a0a0b8;">Açıklama / Not:</label>
+                    <input type="text" id="key-note" placeholder="Örn: Müşteri #1042 Genel Key" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary w-full" style="padding: 12px;"><i class="fas fa-plus"></i> Key Oluştur & Ekle</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Registered Keys Table Card -->
+        <div class="card" style="background: rgba(20, 20, 32, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; overflow-x: auto;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 15px;"><i class="fas fa-list"></i> Kayıtlı Genel Key Listesi</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #a0a0b8;">
+                        <th style="padding: 12px;">Key Kodu</th>
+                        <th style="padding: 12px;">Tür</th>
+                        <th style="padding: 12px;">Not</th>
+                        <th style="padding: 12px;">Durum</th>
+                        <th style="padding: 12px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="keys-table-body">
+                    <!-- Key rows will be rendered dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-key toast-icon"></i>
+        <div class="toast-content">
+            <span class="toast-title">İşlem Başarılı!</span>
+            <span class="toast-desc" id="toast-desc">Key işlemi gerçekleştirildi.</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="key-manager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkForm = document.getElementById('key-check-form');
+            const keyInput = document.getElementById('key-input');
+            const keyResult = document.getElementById('key-result');
+            const resultBadge = document.getElementById('result-status-badge');
+            const resultMessage = document.getElementById('result-message');
+            const resKey = document.getElementById('res-key');
+            const resType = document.getElementById('res-type');
+            const resRemaining = document.getElementById('res-remaining');
+            const resExpires = document.getElementById('res-expires');
+            
+            const createForm = document.getElementById('create-key-form');
+            const keysTableBody = document.getElementById('keys-table-body');
+            const toast = document.getElementById('toast');
+            const toastDesc = document.getElementById('toast-desc');
+
+            const showToast = (msg) => {
+                toastDesc.textContent = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            };
+
+            // Key Kontrol Etme
+            checkForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const res = checkGenelKey(keyInput.value);
+                
+                keyResult.style.display = 'block';
+                if (res.success) {
+                    keyResult.style.background = 'rgba(46, 213, 115, 0.1)';
+                    keyResult.style.border = '1px solid rgba(46, 213, 115, 0.3)';
+                    resultBadge.textContent = "AKTİF LİSANS";
+                    resultBadge.style.background = '#2ed573';
+                    resultBadge.style.color = '#000';
+                    resultMessage.style.color = '#2ed573';
+                    resultMessage.textContent = res.message;
+
+                    resKey.textContent = res.data.key;
+                    resType.textContent = res.data.type;
+                    resRemaining.textContent = res.data.remainingDays;
+                    resExpires.textContent = new Date(res.data.expiresAt).toLocaleDateString('tr-TR');
+                } else {
+                    keyResult.style.background = 'rgba(255, 71, 87, 0.1)';
+                    keyResult.style.border = '1px solid rgba(255, 71, 87, 0.3)';
+                    resultBadge.textContent = "GEÇERSİZ / PASİF";
+                    resultBadge.style.background = '#ff4757';
+                    resultBadge.style.color = '#fff';
+                    resultMessage.style.color = '#ff4757';
+                    resultMessage.textContent = res.message;
+
+                    if (res.data) {
+                        resKey.textContent = res.data.key;
+                        resType.textContent = res.data.type;
+                        resRemaining.textContent = "0 Gün";
+                        resExpires.textContent = new Date(res.data.expiresAt).toLocaleDateString('tr-TR');
+                    } else {
+                        resKey.textContent = keyInput.value.toUpperCase();
+                        resType.textContent = "-";
+                        resRemaining.textContent = "-";
+                        resExpires.textContent = "-";
+                    }
+                }
+            });
+
+            // Yeni Genel Key Oluşturma
+            createForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const duration = document.getElementById('key-duration').value;
+                const note = document.getElementById('key-note').value;
+                
+                const created = createGenelKey(duration, note);
+                showToast(`Yeni Genel Key Oluşturuldu: ${created.key}`);
+                createForm.reset();
+                renderTable();
+            });
+
+            // Key Listesini Tabloda Gösterme
+            const renderTable = () => {
+                const keys = getStoredKeys();
+                keysTableBody.innerHTML = '';
+                
+                if (keys.length === 0) {
+                    keysTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color:#a0a0b8;">Henüz kayıtlı genel key bulunmuyor.</td></tr>`;
+                    return;
+                }
+
+                keys.forEach(k => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                    
+                    const isExp = new Date() > new Date(k.expiresAt);
+                    const statusText = k.status === 'disabled' ? 'Pasif' : (isExp ? 'Süresi Doldu' : 'Aktif');
+                    const statusBg = k.status === 'disabled' ? '#747d8c' : (isExp ? '#ff6b81' : '#2ed573');
+
+                    tr.innerHTML = `
+                        <td style="padding: 12px; font-family: monospace; font-weight: bold; color: #00d2d3;">${k.key}</td>
+                        <td style="padding: 12px;">${k.type}</td>
+                        <td style="padding: 12px; color: #a0a0b8;">${k.note || '-'}</td>
+                        <td style="padding: 12px;"><span style="background: ${statusBg}; color: #000; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">${statusText}</span></td>
+                        <td style="padding: 12px; display: flex; gap: 8px;">
+                            <button class="copy-btn" data-key="${k.key}" style="background: rgba(255,255,255,0.1); border:none; color:#fff; padding: 6px 10px; border-radius: 6px; cursor:pointer;" title="Kopyala"><i class="fas fa-copy"></i></button>
+                            <button class="toggle-btn" data-key="${k.key}" style="background: rgba(255,255,255,0.1); border:none; color:#ffa502; padding: 6px 10px; border-radius: 6px; cursor:pointer;" title="Durumu Değiştir"><i class="fas fa-power-off"></i></button>
+                            <button class="delete-btn" data-key="${k.key}" style="background: rgba(255,71,87,0.2); border:none; color:#ff4757; padding: 6px 10px; border-radius: 6px; cursor:pointer;" title="Sil"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    keysTableBody.appendChild(tr);
+                });
+
+                // Button Listeners
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const code = btn.getAttribute('data-key');
+                        navigator.clipboard.writeText(code);
+                        showToast(`Key Kopyalandı: ${code}`);
+                    });
+                });
+
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const code = btn.getAttribute('data-key');
+                        toggleKeyStatus(code);
+                        renderTable();
+                        showToast(`Key durumu güncellendi.`);
+                    });
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const code = btn.getAttribute('data-key');
+                        if (confirm(`${code} genel key'ini silmek istediğinize emin misiniz?`)) {
+                            deleteGenelKey(code);
+                            renderTable();
+                            showToast(`Key silindi.`);
+                        }
+                    });
+                });
+            };
+
+            // Navbar Discord link kopyalama
+            const navDcBtn = document.getElementById('nav-dc-btn');
+            if (navDcBtn) {
+                navDcBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText('https://discord.gg/MPQGhDpfX');
+                    showToast('Discord linki kopyalandı.');
+                });
+            }
+
+            renderTable();
+        });
+    </script>
+</body>
+</html>
